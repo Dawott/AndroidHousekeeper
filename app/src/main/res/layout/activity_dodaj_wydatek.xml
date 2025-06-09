@@ -35,18 +35,35 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <EditText
-        android:id="@+id/editTextNumberDecimal"
+    <LinearLayout
+        android:id="@+id/layoutAmountCurrency"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:ems="10"
-        android:hint="Kwota"
-        android:inputType="numberDecimal"
+        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editDodajWydatek" />
+        app:layout_constraintTop_toBottomOf="@+id/editDodajWydatek">
+
+        <EditText
+            android:id="@+id/editTextNumberDecimal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:ems="10"
+            android:hint="Kwota"
+            android:inputType="numberDecimal"
+            android:layout_marginEnd="8dp" />
+
+        <Spinner
+            android:id="@+id/spinnerWaluta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="center_vertical" />
+
+    </LinearLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayout"
@@ -59,7 +76,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextNumberDecimal">
+        app:layout_constraintTop_toBottomOf="@+id/layoutAmountCurrency">
 
         <com.google.android.material.textfield.MaterialAutoCompleteTextView
             android:id="@+id/dropdown"
@@ -67,6 +84,7 @@
             android:layout_height="wrap_content"
             android:inputType="none" />
     </com.google.android.material.textfield.TextInputLayout>
+
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="409dp"

@@ -27,7 +27,11 @@ public ExpenseViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewT
 public void onBindViewHolder(@NonNull ExpenseViewHolder holder, int position) {
     Wydatki aktualnyWydatek = wydatki.get(position);
     holder.textViewName.setText(aktualnyWydatek.getNazwa());
-    holder.textViewAmount.setText(String.format("%.2f PLN", aktualnyWydatek.getKwota()));
+    String currency = aktualnyWydatek.getWaluta();
+    if (currency == null || currency.isEmpty()) {
+        currency = "PLN";
+    }
+    holder.textViewAmount.setText(String.format("%.2f %s", aktualnyWydatek.getKwota(), currency));
     holder.textViewCategory.setText(aktualnyWydatek.getKategoria());
     holder.textViewDate.setText(aktualnyWydatek.getData());
 }

@@ -1,9 +1,12 @@
 package com.example.trackerwydatkow;
 
 import android.os.Bundle;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,8 +22,16 @@ import com.example.trackerwydatkow.wydatki.Wydatki;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class Statystyki extends AppCompatActivity {
     private WydatkiBaza database;
+    private Spinner spinnerFromCurrency, spinnerToCurrency;
+    private EditText editAmount;
+    private Button btnConvert;
+    private TextView textConvertedAmount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +47,7 @@ public class Statystyki extends AppCompatActivity {
         database = WydatkiBaza.getInstance(this);
 
         createBasicStats();
+        setupCurrencyConverter();
     }
 
     private void createBasicStats() {
@@ -57,17 +69,14 @@ public class Statystyki extends AppCompatActivity {
                     textTotalCategories.setText("Kategorie: Brak danych");
                 });
             } else {
-                // Calculate statistics
                 double totalAmount = 0;
                 for (Wydatki expense : allExpenses) {
                     totalAmount += expense.getKwota();
                 }
 
-                // Find most expensive
                 Wydatki mostExpensive = Collections.max(allExpenses,
                         Comparator.comparing(Wydatki::getKwota));
 
-                // Calculate average daily (last 30 days)
                 Calendar cal = Calendar.getInstance();
                 cal.add(Calendar.DAY_OF_MONTH, -30);
                 String thirtyDaysAgo = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -83,13 +92,11 @@ public class Statystyki extends AppCompatActivity {
                 }
                 double averageDaily = last30Days / 30;
 
-                // Count categories
                 Set<String> uniqueCategories = new HashSet<>();
                 for (Wydatki expense : allExpenses) {
                     uniqueCategories.add(expense.getKategoria());
                 }
 
-                // Update UI
                 runOnUiThread(() -> {
                     textMostExpensive.setText(String.format("Najdroższy wydatek: %s (%.2f zł)",
                             mostExpensive.getNazwa(), mostExpensive.getKwota()));
@@ -100,38 +107,83 @@ public class Statystyki extends AppCompatActivity {
         }).start();
     }
     private void setupCurrencyConverter() {
-        EditText editAmount = findViewById(R.id.editAmount);
-        Button btnConvert = findViewById(R.id.btnConvert);
-        TextView textConvertedAmount = findViewById(R.id.textConvertedAmount);
+        editAmount = findViewById(R.id.editAmount);
+        btnConvert = findViewById(R.id.btnConvert);
+        textConvertedAmount = findViewById(R.id.textConvertedAmount);
+        spinnerFromCurrency = findViewById(R.id.spinnerFromCurrency);
+        spinnerToCurrency = findViewById(R.id.spinnerToCurrency);
+
+        String[] currencies = {"PLN", "EUR", "USD", "GBP", "CHF", "CZK", "NOK", "SEK", "DKK"};
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, currencies);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        spinnerFromCurrency.setAdapter(adapter);
+        spinnerToCurrency.setAdapter(adapter);
 
         btnConvert.setOnClickListener(v -> {
-            String amountStr = editAmount.getText().toString();
-            if (!amountStr.isEmpty()) {
-                double amount = Double.parseDouble(amountStr);
-                convertCurrency(amount, textConvertedAmount);
+            String amountStr = editAmount.getText().toString().trim();
+            if (amountStr.isEmpty()) {
+                Toast.makeText(this, "Wprowadź kwotę", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            try {
+                double amount = Double.parseDouble(amountStr);
+                String fromCurrency = spinnerFromCurrency.getSelectedItem().toString();
+                String toCurrency = spinnerToCurrency.getSelectedItem().toString();
+
+                if (fromCurrency.equals(toCurrency)) {
+                    textConvertedAmount.setText(String.format("%.2f %s = %.2f %s",
+                            amount, fromCurrency, amount, toCurrency));
+                    return;
+                }
+
+                convertCurrency(amount, fromCurrency, toCurrency);
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "Nieprawidłowa kwota", Toast.LENGTH_SHORT).show();
+            }
+
         });
     }
 
-    private void convertCurrency(double amount, TextView resultText) {
-        CurrencyService.getAPI().getExchangeRates().enqueue(new retrofit2.Callback<CurrencyResponse>() {
+    private void convertCurrency(double amount, String fromCurrency, String toCurrency) {
+        textConvertedAmount.setText("Konwertowanie...");
+
+        CurrencyService.getAPI().getExchangeRates(fromCurrency).enqueue(new Callback<CurrencyResponse>() {
             @Override
-            public void onResponse(retrofit2.Call<CurrencyResponse> call, retrofit2.Response<CurrencyResponse> response) {
+            public void onResponse(Call<CurrencyResponse> call, Response<CurrencyResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Map<String, Double> rates = response.body().getRates();
-                    if (rates.containsKey("EUR")) {
-                        double eurRate = rates.get("EUR");
-                        double convertedAmount = amount * eurRate;
-                        resultText.setText(String.format("%.2f PLN = %.2f EUR", amount, convertedAmount));
+
+                    if (rates.containsKey(toCurrency)) {
+                        double exchangeRate = rates.get(toCurrency);
+                        double convertedAmount = amount * exchangeRate;
+
+                        runOnUiThread(() -> {
+                            textConvertedAmount.setText(String.format(Locale.getDefault(),
+                                    "%.2f %s = %.2f %s", amount, fromCurrency, convertedAmount, toCurrency));
+                        });
+                    } else {
+                        runOnUiThread(() -> {
+                            textConvertedAmount.setText("Waluta " + toCurrency + " nie jest dostępna");
+                        });
                     }
+                } else {
+                    runOnUiThread(() -> {
+                        textConvertedAmount.setText("Błąd podczas pobierania kursu");
+                    });
                 }
             }
 
             @Override
-            public void onFailure(retrofit2.Call<CurrencyResponse> call, Throwable t) {
-                resultText.setText("Błąd podczas pobierania kursu");
+            public void onFailure(Call<CurrencyResponse> call, Throwable t) {
+                runOnUiThread(() -> {
+                    textConvertedAmount.setText("Błąd połączenia z internetem");
+                    Toast.makeText(Statystyki.this, "Sprawdź połączenie internetowe", Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }
-
 }

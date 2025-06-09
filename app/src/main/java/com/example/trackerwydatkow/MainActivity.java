@@ -42,14 +42,19 @@ public class MainActivity extends AppCompatActivity {
         textKwota30 = findViewById(R.id.textKwota30);
         database = WydatkiBaza.getInstance(this);
         aktualizujWydatki();
-        Button btnDodajWydatek = findViewById(R.id.btnDodajWydatek);
+        btnDodajWydatek = findViewById(R.id.btnDodajWydatek);
         btnPoprzednie = findViewById(R.id.btnPoprzednie);
+        btnStatystyki = findViewById(R.id.btnStatystyki);
         btnDodajWydatek.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, DodajWydatek.class);
             startActivity(intent);
         });
         btnPoprzednie.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, PoprzednieWydatki.class);
+            startActivity(intent);
+        });
+        btnStatystyki.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, Statystyki.class);
             startActivity(intent);
         });
 

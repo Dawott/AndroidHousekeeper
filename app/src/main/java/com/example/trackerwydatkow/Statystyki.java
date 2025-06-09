@@ -1,204 +1,126 @@
 package com.example.trackerwydatkow;
 
-import android.graphics.Color;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.trackerwydatkow.api.CurrencyResponse;
-import com.example.trackerwydatkow.api.CurrencyService;
 import com.example.trackerwydatkow.wydatki.WydatkiBaza;
 import com.example.trackerwydatkow.wydatki.Wydatki;
-import com.github.mikephil.charting.charts.PieChart;
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.data.PieData;
-import com.github.mikephil.charting.data.PieDataSet;
-import com.github.mikephil.charting.data.PieEntry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.data.Entry;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Statystyki extends AppCompatActivity {
     private WydatkiBaza database;
-    private PieChart pieChart;
-    private LineChart lineChart;
-    private TextView textMostExpensive, textAverageDaily, textTotalCategories;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_statystyki);
-
-        database = WydatkiBaza.getInstance(this);
-
-        pieChart = findViewById(R.id.pieChart);
-        lineChart = findViewById(R.id.lineChart);
-        textMostExpensive = findViewById(R.id.textMostExpensive);
-        textAverageDaily = findViewById(R.id.textAverageDaily);
-        textTotalCategories = findViewById(R.id.textTotalCategories);
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        loadStatistics();
+        database = WydatkiBaza.getInstance(this);
+
+        createBasicStats();
     }
 
-    private void loadStatistics() {
+    private void createBasicStats() {
+        TextView statsText = new TextView(this);
+        statsText.setTextSize(16);
+        statsText.setPadding(32, 32, 32, 32);
+        statsText.setText("Ładowanie statystyk...");
+
+        androidx.constraintlayout.widget.ConstraintLayout mainLayout = findViewById(R.id.main);
+        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams params =
+                new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
+                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_PARENT,
+                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
+                );
+
+        params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        params.leftToLeft = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        params.rightToRight = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        params.topMargin = 100;
+
+        statsText.setLayoutParams(params);
+        mainLayout.addView(statsText);
+
+        loadBasicStatistics(statsText);
+    }
+
+    private void loadBasicStatistics(TextView statsText) {
         new Thread(() -> {
             List<Wydatki> allExpenses = database.DAOWydatki().getAllExpenses();
 
-            runOnUiThread(() -> {
-                setupPieChart(allExpenses);
-                setupLineChart(allExpenses);
-                calculateBasicStats(allExpenses);
-            });
-        }).start();
-    }
+            StringBuilder stats = new StringBuilder();
+            stats.append("📊 STATYSTYKI WYDATKÓW\n\n");
 
-    private void setupPieChart(List<Wydatki> expenses) {
-        Map<String, Double> categoryTotals = new HashMap<>();
-        for (Wydatki expense : expenses) {
-            categoryTotals.put(expense.getKategoria(),
-                    categoryTotals.getOrDefault(expense.getKategoria(), 0.0) + expense.getKwota());
-        }
+            if (allExpenses.isEmpty()) {
+                stats.append("Brak wydatków do wyświetlenia.");
+            } else {
+                double totalAmount = 0;
+                for (Wydatki expense : allExpenses) {
+                    totalAmount += expense.getKwota();
+                }
+                stats.append("💰 Łączne wydatki: ").append(String.format("%.2f zł", totalAmount)).append("\n\n");
 
-        List<PieEntry> entries = new ArrayList<>();
-        for (Map.Entry<String, Double> entry : categoryTotals.entrySet()) {
-            entries.add(new PieEntry(entry.getValue().floatValue(), entry.getKey()));
-        }
+                Map<String, Integer> categoryCount = new HashMap<>();
+                Map<String, Double> categoryAmount = new HashMap<>();
 
-        PieDataSet dataSet = new PieDataSet(entries, "Wydatki według kategorii");
-        dataSet.setColors(new int[]{
-                Color.rgb(255, 102, 102), // Red
-                Color.rgb(102, 178, 255), // Blue
-                Color.rgb(255, 204, 102), // Yellow
-                Color.rgb(102, 255, 178), // Green
-                Color.rgb(204, 102, 255), // Purple
-                Color.rgb(255, 178, 102)  // Orange
-        });
+                for (Wydatki expense : allExpenses) {
+                    String category = expense.getKategoria();
+                    categoryCount.put(category, categoryCount.getOrDefault(category, 0) + 1);
+                    categoryAmount.put(category, categoryAmount.getOrDefault(category, 0.0) + expense.getKwota());
+                }
 
-        PieData pieData = new PieData(dataSet);
-        pieChart.setData(pieData);
-        pieChart.getDescription().setEnabled(false);
-        pieChart.invalidate();
-    }
+                stats.append("📂 Wydatki według kategorii:\n");
+                for (Map.Entry<String, Double> entry : categoryAmount.entrySet()) {
+                    String category = entry.getKey();
+                    double amount = entry.getValue();
+                    int count = categoryCount.get(category);
+                    stats.append("• ").append(category).append(": ").append(String.format("%.2f zł", amount))
+                            .append(" (").append(count).append(" wydatków)\n");
+                }
 
-    private void setupLineChart(List<Wydatki> expenses) {
-        Map<String, Double> dailyTotals = new HashMap<>();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                Wydatki mostExpensive = Collections.max(allExpenses,
+                        Comparator.comparing(Wydatki::getKwota));
+                stats.append("\n🏆 Najdroższy wydatek:\n");
+                stats.append("• ").append(mostExpensive.getNazwa()).append(": ")
+                        .append(String.format("%.2f zł", mostExpensive.getKwota())).append("\n");
 
-        for (Wydatki expense : expenses) {
-            String date = expense.getData();
-            dailyTotals.put(date, dailyTotals.getOrDefault(date, 0.0) + expense.getKwota());
-        }
+                double average = totalAmount / allExpenses.size();
+                stats.append("\n📈 Średni wydatek: ").append(String.format("%.2f zł", average)).append("\n");
 
-        List<Entry> entries = new ArrayList<>();
-        List<String> sortedDates = new ArrayList<>(dailyTotals.keySet());
-        Collections.sort(sortedDates);
+                Calendar cal = Calendar.getInstance();
+                cal.add(Calendar.DAY_OF_MONTH, -30);
+                String thirtyDaysAgo = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        .format(cal.getTime());
 
-        for (int i = 0; i < sortedDates.size() && i < 30; i++) {
-            String date = sortedDates.get(sortedDates.size() - 30 + i);
-            if (date != null && dailyTotals.containsKey(date)) {
-                entries.add(new Entry(i, dailyTotals.get(date).floatValue()));
-            }
-        }
-
-        LineDataSet dataSet = new LineDataSet(entries, "Wydatki dzienne (ostatnie 30 dni)");
-        dataSet.setColor(Color.rgb(102, 178, 255));
-        dataSet.setValueTextColor(Color.BLACK);
-
-        LineData lineData = new LineData(dataSet);
-        lineChart.setData(lineData);
-        lineChart.getDescription().setEnabled(false);
-        lineChart.invalidate();
-    }
-
-    private void calculateBasicStats(List<Wydatki> expenses) {
-        if (expenses.isEmpty()) {
-            textMostExpensive.setText("Najdroższy wydatek: Brak danych");
-            textAverageDaily.setText("Średnia dzienna: 0 zł");
-            textTotalCategories.setText("Kategorie: 0");
-            return;
-        }
-
-        Wydatki mostExpensive = Collections.max(expenses,
-                Comparator.comparing(Wydatki::getKwota));
-
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DAY_OF_MONTH, -30);
-        String thirtyDaysAgo = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                .format(cal.getTime());
-
-        double totalLast30Days = 0;
-        int daysWithExpenses = 0;
-        Set<String> datesWithExpenses = new HashSet<>();
-
-        for (Wydatki expense : expenses) {
-            if (expense.getData().compareTo(thirtyDaysAgo) >= 0) {
-                totalLast30Days += expense.getKwota();
-                datesWithExpenses.add(expense.getData());
-            }
-        }
-
-        double dailyAverage = datesWithExpenses.isEmpty() ? 0 :
-                totalLast30Days / Math.max(1, datesWithExpenses.size());
-
-        Set<String> uniqueCategories = new HashSet<>();
-        for (Wydatki expense : expenses) {
-            uniqueCategories.add(expense.getKategoria());
-        }
-
-        textMostExpensive.setText(String.format("Najdroższy: %s (%.2f zł)",
-                mostExpensive.getNazwa(), mostExpensive.getKwota()));
-        textAverageDaily.setText(String.format("Średnia dzienna: %.2f zł", dailyAverage));
-        textTotalCategories.setText(String.format("Kategorie: %d", uniqueCategories.size()));
-    }
-
-    private void setupCurrencyConverter() {
-        EditText editAmount = findViewById(R.id.editAmount);
-        Button btnConvert = findViewById(R.id.btnConvert);
-        TextView textConvertedAmount = findViewById(R.id.textConvertedAmount);
-
-        btnConvert.setOnClickListener(v -> {
-            String amountStr = editAmount.getText().toString();
-            if (!amountStr.isEmpty()) {
-                double amount = Double.parseDouble(amountStr);
-                convertCurrency(amount, textConvertedAmount);
-            }
-        });
-    }
-
-    private void convertCurrency(double amount, TextView resultText) {
-        CurrencyService.getAPI().getExchangeRates().enqueue(new retrofit2.Callback<CurrencyResponse>() {
-            @Override
-            public void onResponse(retrofit2.Call<CurrencyResponse> call, retrofit2.Response<CurrencyResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Map<String, Double> rates = response.body().getRates();
-                    if (rates.containsKey("EUR")) {
-                        double eurRate = rates.get("EUR");
-                        double convertedAmount = amount * eurRate;
-                        resultText.setText(String.format("%.2f PLN = %.2f EUR", amount, convertedAmount));
+                double last30Days = 0;
+                int count30Days = 0;
+                for (Wydatki expense : allExpenses) {
+                    if (expense.getData().compareTo(thirtyDaysAgo) >= 0) {
+                        last30Days += expense.getKwota();
+                        count30Days++;
                     }
                 }
+
+                stats.append("\n📅 Ostatnie 30 dni:\n");
+                stats.append("• Kwota: ").append(String.format("%.2f zł", last30Days)).append("\n");
+                stats.append("• Liczba wydatków: ").append(count30Days).append("\n");
             }
 
-            @Override
-            public void onFailure(retrofit2.Call<CurrencyResponse> call, Throwable t) {
-                resultText.setText("Błąd podczas pobierania kursu");
-            }
-        });
+            runOnUiThread(() -> statsText.setText(stats.toString()));
+        }).start();
     }
 }

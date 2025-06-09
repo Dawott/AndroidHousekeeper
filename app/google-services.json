@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "208595395217",
+    "project_id": "housekeeper-a7f52",
+    "storage_bucket": "housekeeper-a7f52.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:208595395217:android:346709d1b9a950d42a9530",
+        "android_client_info": {
+          "package_name": "com.example.trackerwydatkow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0oi5wDO1aHCNAZuNbZ7BIIHl3AromSrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

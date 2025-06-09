@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,10 +14,14 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.trackerwydatkow.wydatki.WydatkiBaza;
 import com.example.trackerwydatkow.wydatki.Wydatki;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -67,5 +72,38 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         aktualizujWydatki();
+    }
+
+    private void setupFirebaseSync() {
+        Button btnSync = findViewById(R.id.btnSyncFirebase);
+        btnSync.setOnClickListener(v -> syncWithFirebase());
+    }
+
+    private void syncWithFirebase() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        new Thread(() -> {
+            List<Wydatki> localExpenses = database.DAOWydatki().getAllExpenses();
+
+            for (Wydatki expense : localExpenses) {
+                Map<String, Object> expenseData = new HashMap<>();
+                expenseData.put("nazwa", expense.getNazwa());
+                expenseData.put("kwota", expense.getKwota());
+                expenseData.put("kategoria", expense.getKategoria());
+                expenseData.put("data", expense.getData());
+                expenseData.put("timestamp", System.currentTimeMillis());
+
+                db.collection("expenses")
+                        .add(expenseData)
+                        .addOnSuccessListener(documentReference -> {
+                            runOnUiThread(() ->
+                                    Toast.makeText(this, "Zsynchronizowano z Firebase", Toast.LENGTH_SHORT).show());
+                        })
+                        .addOnFailureListener(e -> {
+                            runOnUiThread(() ->
+                                    Toast.makeText(this, "Błąd synchronizacji", Toast.LENGTH_SHORT).show());
+                        });
+            }
+        }).start();
     }
 }

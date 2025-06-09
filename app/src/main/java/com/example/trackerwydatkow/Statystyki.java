@@ -1,6 +1,8 @@
 package com.example.trackerwydatkow;
 
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -9,6 +11,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.trackerwydatkow.api.CurrencyResponse;
+import com.example.trackerwydatkow.api.CurrencyService;
 import com.example.trackerwydatkow.wydatki.WydatkiBaza;
 import com.example.trackerwydatkow.wydatki.Wydatki;
 
@@ -35,72 +39,35 @@ public class Statystyki extends AppCompatActivity {
     }
 
     private void createBasicStats() {
-        TextView statsText = new TextView(this);
-        statsText.setTextSize(16);
-        statsText.setPadding(32, 32, 32, 32);
-        statsText.setText("Ładowanie statystyk...");
+        TextView textMostExpensive = findViewById(R.id.textMostExpensive);
+        TextView textAverageDaily = findViewById(R.id.textAverageDaily);
+        TextView textTotalCategories = findViewById(R.id.textTotalCategories);
 
-        androidx.constraintlayout.widget.ConstraintLayout mainLayout = findViewById(R.id.main);
-        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams params =
-                new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
-                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_PARENT,
-                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-        params.leftToLeft = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-        params.rightToRight = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-        params.topMargin = 100;
-
-        statsText.setLayoutParams(params);
-        mainLayout.addView(statsText);
-
-        loadBasicStatistics(statsText);
+        loadBasicStatistics(textMostExpensive, textAverageDaily, textTotalCategories);
     }
 
-    private void loadBasicStatistics(TextView statsText) {
+    private void loadBasicStatistics(TextView textMostExpensive, TextView textAverageDaily, TextView textTotalCategories) {
         new Thread(() -> {
             List<Wydatki> allExpenses = database.DAOWydatki().getAllExpenses();
 
-            StringBuilder stats = new StringBuilder();
-            stats.append("📊 STATYSTYKI WYDATKÓW\n\n");
-
             if (allExpenses.isEmpty()) {
-                stats.append("Brak wydatków do wyświetlenia.");
+                runOnUiThread(() -> {
+                    textMostExpensive.setText("Najdroższy wydatek: Brak danych");
+                    textAverageDaily.setText("Średnia dzienna: Brak danych");
+                    textTotalCategories.setText("Kategorie: Brak danych");
+                });
             } else {
+                // Calculate statistics
                 double totalAmount = 0;
                 for (Wydatki expense : allExpenses) {
                     totalAmount += expense.getKwota();
                 }
-                stats.append("💰 Łączne wydatki: ").append(String.format("%.2f zł", totalAmount)).append("\n\n");
 
-                Map<String, Integer> categoryCount = new HashMap<>();
-                Map<String, Double> categoryAmount = new HashMap<>();
-
-                for (Wydatki expense : allExpenses) {
-                    String category = expense.getKategoria();
-                    categoryCount.put(category, categoryCount.getOrDefault(category, 0) + 1);
-                    categoryAmount.put(category, categoryAmount.getOrDefault(category, 0.0) + expense.getKwota());
-                }
-
-                stats.append("📂 Wydatki według kategorii:\n");
-                for (Map.Entry<String, Double> entry : categoryAmount.entrySet()) {
-                    String category = entry.getKey();
-                    double amount = entry.getValue();
-                    int count = categoryCount.get(category);
-                    stats.append("• ").append(category).append(": ").append(String.format("%.2f zł", amount))
-                            .append(" (").append(count).append(" wydatków)\n");
-                }
-
+                // Find most expensive
                 Wydatki mostExpensive = Collections.max(allExpenses,
                         Comparator.comparing(Wydatki::getKwota));
-                stats.append("\n🏆 Najdroższy wydatek:\n");
-                stats.append("• ").append(mostExpensive.getNazwa()).append(": ")
-                        .append(String.format("%.2f zł", mostExpensive.getKwota())).append("\n");
 
-                double average = totalAmount / allExpenses.size();
-                stats.append("\n📈 Średni wydatek: ").append(String.format("%.2f zł", average)).append("\n");
-
+                // Calculate average daily (last 30 days)
                 Calendar cal = Calendar.getInstance();
                 cal.add(Calendar.DAY_OF_MONTH, -30);
                 String thirtyDaysAgo = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -114,13 +81,57 @@ public class Statystyki extends AppCompatActivity {
                         count30Days++;
                     }
                 }
+                double averageDaily = last30Days / 30;
 
-                stats.append("\n📅 Ostatnie 30 dni:\n");
-                stats.append("• Kwota: ").append(String.format("%.2f zł", last30Days)).append("\n");
-                stats.append("• Liczba wydatków: ").append(count30Days).append("\n");
+                // Count categories
+                Set<String> uniqueCategories = new HashSet<>();
+                for (Wydatki expense : allExpenses) {
+                    uniqueCategories.add(expense.getKategoria());
+                }
+
+                // Update UI
+                runOnUiThread(() -> {
+                    textMostExpensive.setText(String.format("Najdroższy wydatek: %s (%.2f zł)",
+                            mostExpensive.getNazwa(), mostExpensive.getKwota()));
+                    textAverageDaily.setText(String.format("Średnia dzienna: %.2f zł", averageDaily));
+                    textTotalCategories.setText(String.format("Kategorie: %d używanych", uniqueCategories.size()));
+                });
             }
-
-            runOnUiThread(() -> statsText.setText(stats.toString()));
         }).start();
     }
+    private void setupCurrencyConverter() {
+        EditText editAmount = findViewById(R.id.editAmount);
+        Button btnConvert = findViewById(R.id.btnConvert);
+        TextView textConvertedAmount = findViewById(R.id.textConvertedAmount);
+
+        btnConvert.setOnClickListener(v -> {
+            String amountStr = editAmount.getText().toString();
+            if (!amountStr.isEmpty()) {
+                double amount = Double.parseDouble(amountStr);
+                convertCurrency(amount, textConvertedAmount);
+            }
+        });
+    }
+
+    private void convertCurrency(double amount, TextView resultText) {
+        CurrencyService.getAPI().getExchangeRates().enqueue(new retrofit2.Callback<CurrencyResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<CurrencyResponse> call, retrofit2.Response<CurrencyResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Map<String, Double> rates = response.body().getRates();
+                    if (rates.containsKey("EUR")) {
+                        double eurRate = rates.get("EUR");
+                        double convertedAmount = amount * eurRate;
+                        resultText.setText(String.format("%.2f PLN = %.2f EUR", amount, convertedAmount));
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<CurrencyResponse> call, Throwable t) {
+                resultText.setText("Błąd podczas pobierania kursu");
+            }
+        });
+    }
+
 }

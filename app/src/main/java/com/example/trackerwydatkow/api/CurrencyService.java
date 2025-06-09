@@ -4,7 +4,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CurrencyService {
-    private static final String BASE_URL = "https://api.exchangerate-api.com/v4/latest/";
+    private static final String BASE_URL = "https://api.exchangerate-api.com/v4/";
     private static CurrencyAPI api;
 
     public static CurrencyAPI getAPI() {

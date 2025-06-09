@@ -21,6 +21,9 @@ public interface DAOWydatki {
     @Query("SELECT SUM(kwota) FROM wydatki WHERE data >= date(:startDate)")
     double getTotalExpensesAfterDate(String startDate);
 
+    @Query("SELECT * FROM wydatki WHERE data >= date(:startDate) ORDER BY data DESC")
+    List<Wydatki> getExpensesAfterDate(String startDate);
+
     @Delete
     void delete(Wydatki wydatki);
 }

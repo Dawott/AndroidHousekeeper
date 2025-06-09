@@ -1,5 +1,7 @@
 package com.example.trackerwydatkow;
 
+import static android.content.ContentValues.TAG;
+
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -7,6 +9,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -107,6 +110,8 @@ public class Statystyki extends AppCompatActivity {
         }).start();
     }
     private void setupCurrencyConverter() {
+        Log.d(TAG, "Odpalanie metody setupCurrencyConverter...");
+
         editAmount = findViewById(R.id.editAmount);
         btnConvert = findViewById(R.id.btnConvert);
         textConvertedAmount = findViewById(R.id.textConvertedAmount);
@@ -122,10 +127,15 @@ public class Statystyki extends AppCompatActivity {
         spinnerFromCurrency.setAdapter(adapter);
         spinnerToCurrency.setAdapter(adapter);
 
+        spinnerFromCurrency.setSelection(0); // PLN
+        spinnerToCurrency.setSelection(1); // EUR
+
         btnConvert.setOnClickListener(v -> {
+            Log.d(TAG, "Kliknięta konwersja");
             String amountStr = editAmount.getText().toString().trim();
             if (amountStr.isEmpty()) {
                 Toast.makeText(this, "Wprowadź kwotę", Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "Pusta wartość kwoty?");
                 return;
             }
 
@@ -133,7 +143,7 @@ public class Statystyki extends AppCompatActivity {
                 double amount = Double.parseDouble(amountStr);
                 String fromCurrency = spinnerFromCurrency.getSelectedItem().toString();
                 String toCurrency = spinnerToCurrency.getSelectedItem().toString();
-
+                Log.d(TAG, String.format("Converting %.2f from %s to %s", amount, fromCurrency, toCurrency));
                 if (fromCurrency.equals(toCurrency)) {
                     textConvertedAmount.setText(String.format("%.2f %s = %.2f %s",
                             amount, fromCurrency, amount, toCurrency));
@@ -172,6 +182,8 @@ public class Statystyki extends AppCompatActivity {
                     }
                 } else {
                     runOnUiThread(() -> {
+                        Log.e(TAG, "Błąd API: " + response.code() +
+                                ", Message: " + response.message());
                         textConvertedAmount.setText("Błąd podczas pobierania kursu");
                     });
                 }
@@ -179,6 +191,7 @@ public class Statystyki extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<CurrencyResponse> call, Throwable t) {
+                Log.e(TAG, "API call upadł", t);
                 runOnUiThread(() -> {
                     textConvertedAmount.setText("Błąd połączenia z internetem");
                     Toast.makeText(Statystyki.this, "Sprawdź połączenie internetowe", Toast.LENGTH_SHORT).show();

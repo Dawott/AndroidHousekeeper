@@ -3,26 +3,115 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#000000"
+    tools:context=".ScanReceiptActivity">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btnCapture"
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-
-        android:text="Zrób zdjęcie"
-        android:background="#23103A"
-        android:backgroundTint="#23103A"
-        android:textColor="#A0204C"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/layoutControls"
         app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="542dp" />
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <View
+        android:id="@+id/overlayView"
+        android:layout_width="300dp"
+        android:layout_height="400dp"
+        android:background="@drawable/receipt_overlay"
+        app:layout_constraintTop_toTopOf="@+id/previewView"
+        app:layout_constraintBottom_toBottomOf="@+id/previewView"
+        app:layout_constraintStart_toStartOf="@+id/previewView"
+        app:layout_constraintEnd_toEndOf="@+id/previewView" />
+
+    <TextView
+        android:id="@+id/textInstructions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Umieść paragon w ramce"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="#80000000"
+        android:padding="12dp"
+        app:layout_constraintTop_toTopOf="@+id/previewView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/layoutControls"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#29282D4F"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnBack"
+            android:layout_width="80dp"
+            android:layout_height="60dp"
+            android:layout_marginEnd="32dp"
+            android:background="#23103A"
+            android:text="Wróć"
+            android:textColor="#A0204C"
+            android:textSize="12sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnCapture"
+            android:layout_width="120dp"
+            android:layout_height="80dp"
+            android:background="#23103A"
+            android:backgroundTint="#23103A"
+            android:text="📷\nZrób zdjęcie"
+            android:textColor="#A0204C"
+            android:textSize="14sp"
+            android:gravity="center" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnFlash"
+            android:layout_width="80dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="32dp"
+            android:background="#23103A"
+            android:text="💡"
+            android:textColor="#A0204C"
+            android:textSize="18sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutLoading"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#CC000000"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ProgressBar
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/textLoadingMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Przetwarzanie zdjęcia..."
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

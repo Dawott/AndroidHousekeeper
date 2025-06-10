@@ -34,7 +34,7 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button btnStatystyki, btnPoprzednie, btnDodajWydatek;
+    Button btnStatystyki, btnPoprzednie, btnDodajWydatek, btnScanReceipt;
     private WydatkiBaza database;
     private TextView textKwota30;
 
@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         btnDodajWydatek = findViewById(R.id.btnDodajWydatek);
         btnPoprzednie = findViewById(R.id.btnPoprzednie);
         btnStatystyki = findViewById(R.id.btnStatystyki);
+        btnScanReceipt = findViewById(R.id.btnScanReceipt);
         btnDodajWydatek.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, DodajWydatek.class);
             startActivity(intent);
@@ -66,7 +67,10 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, Statystyki.class);
             startActivity(intent);
         });
-
+        btnScanReceipt.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, ScanReceiptActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void aktualizujWydatki() {

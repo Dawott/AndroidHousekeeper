@@ -30,6 +30,12 @@ public abstract class WydatkiBaza extends RoomDatabase {
         }
     };
 
+    private static final Migration MIGRATION_3_3 = new Migration(3, 3) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+        }
+    };
+
     public static synchronized WydatkiBaza getInstance(Context context) {
         if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(),

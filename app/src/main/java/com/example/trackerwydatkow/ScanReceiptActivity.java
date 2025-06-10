@@ -46,8 +46,8 @@ public class ScanReceiptActivity extends AppCompatActivity {
     private static final String TAG = "ScanReceiptActivity";
     private static final int REQUEST_CODE_PERMISSIONS = 10;
     private static final String[] REQUIRED_PERMISSIONS = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.CAMERA
+            //Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
     private PreviewView previewView;
@@ -74,14 +74,18 @@ public class ScanReceiptActivity extends AppCompatActivity {
             return insets;
         });
 
+        Log.d(TAG, "ScanReceiptActivity onCreate start");
+
         initializeViews();
         initializeMLKit();
 
+        /*
         if (allPermissionsGranted()) {
             startCamera();
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
-        }
+        }*/
+        checkAndRequestPermissions();
     }
 
     private void initializeViews() {
@@ -99,8 +103,10 @@ public class ScanReceiptActivity extends AppCompatActivity {
 
     private void initializeMLKit() {
         textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        Log.d(TAG, "ML Kit initialized");
     }
 
+    /*
     private boolean allPermissionsGranted() {
         for (String permission : REQUIRED_PERMISSIONS) {
             if (ContextCompat.checkSelfPermission(this, permission)
@@ -108,6 +114,36 @@ public class ScanReceiptActivity extends AppCompatActivity {
                 return false;
             }
         }
+        return true;
+
+     */
+    private void checkAndRequestPermissions() {
+        Log.d(TAG, "Checking permissions...");
+
+        for (String permission : REQUIRED_PERMISSIONS) {
+            int permissionStatus = ContextCompat.checkSelfPermission(this, permission);
+            Log.d(TAG, "Permission " + permission + " status: " +
+                    (permissionStatus == PackageManager.PERMISSION_GRANTED ? "GRANTED" : "DENIED"));
+        }
+
+        if (allPermissionsGranted()) {
+            Log.d(TAG, "All permissions granted, starting camera");
+            startCamera();
+        } else {
+            Log.d(TAG, "Requesting permissions");
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+        }
+    }
+
+    private boolean allPermissionsGranted() {
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Permission not granted: " + permission);
+                return false;
+            }
+        }
+        Log.d(TAG, "All permissions are granted");
         return true;
     }
 

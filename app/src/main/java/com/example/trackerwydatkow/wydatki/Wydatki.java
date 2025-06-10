@@ -29,10 +29,10 @@ public class Wydatki {
     private String receiptImageUrl;
 
     @ColumnInfo(name = "is_from_receipt", defaultValue = "0")
-    private boolean isFromReceipt;
+    private Boolean isFromReceipt;
 
     @ColumnInfo(name = "ocr_confidence", defaultValue = "0")
-    private float ocrConfidence;
+    private Float ocrConfidence;
 
 /*
     @ColumnInfo(name = "location")
@@ -70,15 +70,15 @@ public class Wydatki {
 
     @Ignore
     public Wydatki(String nazwa, double kwota, String kategoria, String data, String waluta,
-                   String receiptImageUrl, boolean isFromReceipt, float ocrConfidence) {
+                   String receiptImageUrl, Boolean isFromReceipt, Float ocrConfidence) {
         this.nazwa = nazwa;
         this.kwota = kwota;
         this.kategoria = kategoria;
         this.data = data;
         this.waluta = waluta;
         this.receiptImageUrl = receiptImageUrl;
-        this.isFromReceipt = isFromReceipt;
-        this.ocrConfidence = ocrConfidence;
+        this.isFromReceipt = isFromReceipt != null ? isFromReceipt : false;
+        this.ocrConfidence = ocrConfidence != null ? ocrConfidence : 0.0f;
     }
 
     public int getId() { return id; }
@@ -95,12 +95,31 @@ public class Wydatki {
     public void setData(String data) { this.data = data; }
     public void setWaluta(String waluta) { this.waluta = waluta; }
 
-    public String getReceiptImageUrl() { return receiptImageUrl; }
-    public void setReceiptImageUrl(String receiptImageUrl) { this.receiptImageUrl = receiptImageUrl; }
+    public String getReceiptImageUrl() {
+        return receiptImageUrl;
+    }
 
-    public boolean isFromReceipt() { return isFromReceipt; }
-    public void setFromReceipt(boolean fromReceipt) { isFromReceipt = fromReceipt; }
+    public void setReceiptImageUrl(String receiptImageUrl) {
+        this.receiptImageUrl = receiptImageUrl;
+    }
 
-    public float getOcrConfidence() { return ocrConfidence; }
-    public void setOcrConfidence(float ocrConfidence) { this.ocrConfidence = ocrConfidence; }
+    public boolean isFromReceipt() {
+        return isFromReceipt != null ? isFromReceipt : false;
+    }
+
+    public void setFromReceipt(Boolean fromReceipt) {
+        this.isFromReceipt = fromReceipt;
+    }
+
+    public float getOcrConfidence() {
+        return ocrConfidence != null ? ocrConfidence : 0.0f;
+    }
+
+    public void setOcrConfidence(Float ocrConfidence) {
+        this.ocrConfidence = ocrConfidence;
+    }
+
+    public boolean hasReceiptImage() {
+        return receiptImageUrl != null && !receiptImageUrl.trim().isEmpty();
+    }
 }

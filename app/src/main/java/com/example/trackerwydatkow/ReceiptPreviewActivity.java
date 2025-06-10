@@ -346,8 +346,8 @@ public class ReceiptPreviewActivity extends AppCompatActivity {
     private void saveExpenseToDatabase(String merchantName, double amount, String category, String date, String imageUrl) {
         Wydatki expense = new Wydatki(merchantName, amount, category, date, "PLN");
 
-        // expense.setReceiptImageUrl(imageUrl);
-        // expense.setFromReceipt(true);
+        expense.setReceiptImageUrl(imageUrl);
+        expense.setFromReceipt(true);
 
         new Thread(() -> {
             try {

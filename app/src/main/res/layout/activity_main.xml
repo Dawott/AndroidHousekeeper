@@ -33,13 +33,13 @@
         android:textColor="#A0204C"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnDodajWydatek" />
+        app:layout_constraintTop_toBottomOf="@+id/btnScanReceipt" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnDodajWydatek"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="427dp"
+        android:layout_marginTop="350dp"
         android:background="#23103A"
         android:backgroundTint="#23103A"
         android:stateListAnimator="@android:anim/overshoot_interpolator"
@@ -51,6 +51,7 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar" />
+
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -64,6 +65,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:navigationIcon="@android:drawable/ic_menu_sort_by_size" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnScanReceipt"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="📷 Skanuj paragon"
+        android:background="#23103A"
+        android:textColor="#A0204C"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnDodajWydatek"/>
 
     <TextView
         android:id="@+id/textLast30"

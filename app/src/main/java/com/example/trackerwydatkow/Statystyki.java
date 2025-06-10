@@ -2,6 +2,7 @@ package com.example.trackerwydatkow;
 
 import static android.content.ContentValues.TAG;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -22,7 +23,23 @@ import com.example.trackerwydatkow.api.CurrencyService;
 import com.example.trackerwydatkow.wydatki.WydatkiBaza;
 import com.example.trackerwydatkow.wydatki.Wydatki;
 
+// Import dla wykresów
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+
 import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.*;
 
 import retrofit2.Call;
@@ -35,6 +52,10 @@ public class Statystyki extends AppCompatActivity {
     private EditText editAmount;
     private Button btnConvert;
     private TextView textConvertedAmount;
+
+    // Dodane referencje do wykresów
+    private PieChart pieChart;
+    private LineChart lineChart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,8 +70,216 @@ public class Statystyki extends AppCompatActivity {
 
         database = WydatkiBaza.getInstance(this);
 
+        // Inicjalizacja wykresów
+        initializeCharts();
+
         createBasicStats();
         setupCurrencyConverter();
+
+        // Załaduj dane do wykresów
+        loadChartsData();
+    }
+
+    private void initializeCharts() {
+        pieChart = findViewById(R.id.pieChart);
+        lineChart = findViewById(R.id.lineChart);
+
+        setupPieChart();
+        setupLineChart();
+    }
+
+    private void setupPieChart() {
+        pieChart.setUsePercentValues(true);
+        pieChart.getDescription().setEnabled(false);
+        pieChart.setExtraOffsets(5, 10, 5, 5);
+
+        pieChart.setDragDecelerationFrictionCoef(0.95f);
+        pieChart.setDrawHoleEnabled(true);
+        pieChart.setHoleColor(Color.WHITE);
+        pieChart.setTransparentCircleRadius(61f);
+
+        // Ustawienia legendy
+        Legend legend = pieChart.getLegend();
+        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
+        legend.setOrientation(Legend.LegendOrientation.VERTICAL);
+        legend.setDrawInside(false);
+        legend.setXEntrySpace(7f);
+        legend.setYEntrySpace(0f);
+        legend.setYOffset(0f);
+    }
+
+    private void setupLineChart() {
+        lineChart.getDescription().setEnabled(false);
+        lineChart.setTouchEnabled(true);
+        lineChart.setDragEnabled(true);
+        lineChart.setScaleEnabled(true);
+        lineChart.setPinchZoom(true);
+
+        // Oś X
+        XAxis xAxis = lineChart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        xAxis.setGranularity(1f);
+        xAxis.setLabelCount(7);
+
+        // Oś Y lewa
+        YAxis leftAxis = lineChart.getAxisLeft();
+        leftAxis.setDrawGridLines(true);
+        leftAxis.setAxisMinimum(0f);
+
+        // Oś Y prawa - wyłączona
+        lineChart.getAxisRight().setEnabled(false);
+
+        // Legenda
+        Legend legend = lineChart.getLegend();
+        legend.setForm(Legend.LegendForm.LINE);
+        legend.setTextSize(11f);
+        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.BOTTOM);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
+        legend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
+        legend.setDrawInside(false);
+    }
+
+    private void loadChartsData() {
+        new Thread(() -> {
+            List<Wydatki> allExpenses = database.DAOWydatki().getAllExpenses();
+
+            runOnUiThread(() -> {
+                loadPieChartData(allExpenses);
+                loadLineChartData(allExpenses);
+            });
+        }).start();
+    }
+
+    private void loadPieChartData(List<Wydatki> expenses) {
+        Map<String, Float> categoryTotals = new HashMap<>();
+
+        // Oblicz sumy dla każdej kategorii
+        for (Wydatki expense : expenses) {
+            String category = expense.getKategoria();
+            float amount = (float) expense.getKwota();
+            categoryTotals.put(category, categoryTotals.getOrDefault(category, 0f) + amount);
+        }
+
+        // Utwórz dane dla wykresu kołowego
+        ArrayList<PieEntry> entries = new ArrayList<>();
+        for (Map.Entry<String, Float> entry : categoryTotals.entrySet()) {
+            entries.add(new PieEntry(entry.getValue(), entry.getKey()));
+        }
+
+        if (entries.isEmpty()) {
+            pieChart.setNoDataText("Brak danych do wyświetlenia");
+            return;
+        }
+
+        PieDataSet dataSet = new PieDataSet(entries, "Wydatki według kategorii");
+        dataSet.setSliceSpace(3f);
+        dataSet.setSelectionShift(5f);
+
+        // Kolory dla kategorii
+        ArrayList<Integer> colors = new ArrayList<>();
+        colors.add(Color.rgb(64, 89, 128));
+        colors.add(Color.rgb(149, 165, 124));
+        colors.add(Color.rgb(217, 184, 162));
+        colors.add(Color.rgb(191, 134, 134));
+        colors.add(Color.rgb(179, 48, 80));
+        colors.add(Color.rgb(193, 37, 82));
+        dataSet.setColors(colors);
+
+        PieData data = new PieData(dataSet);
+        data.setValueTextSize(10f);
+        data.setValueTextColor(Color.WHITE);
+
+        pieChart.setData(data);
+        pieChart.invalidate();
+    }
+
+    private void loadLineChartData(List<Wydatki> expenses) {
+        // Pobierz wydatki z ostatnich 30 dni
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, -30);
+        String startDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.getTime());
+
+        // Filtruj wydatki z ostatnich 30 dni
+        List<Wydatki> recentExpenses = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+        for (Wydatki expense : expenses) {
+            try {
+                Date expenseDate = sdf.parse(expense.getData());
+                Date startDateParsed = sdf.parse(startDate);
+                if (expenseDate != null && startDateParsed != null && expenseDate.after(startDateParsed)) {
+                    recentExpenses.add(expense);
+                }
+            } catch (ParseException e) {
+                Log.e(TAG, "Błąd parsowania daty: " + expense.getData());
+            }
+        }
+
+        // Grupuj wydatki według dni
+        Map<String, Float> dailyTotals = new TreeMap<>();
+
+        // Inicjalizuj wszystkie dni ostatnich 30 dni z zerowymi wartościami
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_MONTH, -29); // Zaczynamy od 29 dni temu
+        for (int i = 0; i < 30; i++) {
+            String dateKey = sdf.format(cal.getTime());
+            dailyTotals.put(dateKey, 0f);
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        // Dodaj rzeczywiste wydatki
+        for (Wydatki expense : recentExpenses) {
+            String dateKey = expense.getData();
+            float amount = (float) expense.getKwota();
+            dailyTotals.put(dateKey, dailyTotals.getOrDefault(dateKey, 0f) + amount);
+        }
+
+        // Utwórz dane dla wykresu liniowego
+        ArrayList<Entry> entries = new ArrayList<>();
+        ArrayList<String> dates = new ArrayList<>();
+        int index = 0;
+
+        for (Map.Entry<String, Float> entry : dailyTotals.entrySet()) {
+            entries.add(new Entry(index, entry.getValue()));
+
+            // Formatuj datę do wyświetlenia (tylko dzień i miesiąc)
+            try {
+                Date date = sdf.parse(entry.getKey());
+                SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM", Locale.getDefault());
+                dates.add(displayFormat.format(date));
+            } catch (ParseException e) {
+                dates.add(entry.getKey());
+            }
+            index++;
+        }
+
+        if (entries.isEmpty()) {
+            lineChart.setNoDataText("Brak danych z ostatnich 30 dni");
+            return;
+        }
+
+        LineDataSet dataSet = new LineDataSet(entries, "Wydatki dzienne (PLN)");
+        dataSet.setColor(Color.rgb(64, 89, 128));
+        dataSet.setCircleColor(Color.rgb(64, 89, 128));
+        dataSet.setLineWidth(2f);
+        dataSet.setCircleRadius(4f);
+        dataSet.setDrawCircleHole(false);
+        dataSet.setValueTextSize(10f);
+        dataSet.setDrawFilled(true);
+        dataSet.setFillColor(Color.rgb(64, 89, 128));
+        dataSet.setFillAlpha(30);
+
+        LineData data = new LineData(dataSet);
+
+        // Ustaw etykiety osi X
+        XAxis xAxis = lineChart.getXAxis();
+        xAxis.setValueFormatter(new IndexAxisValueFormatter(dates));
+        xAxis.setLabelRotationAngle(-45);
+
+        lineChart.setData(data);
+        lineChart.invalidate();
     }
 
     private void createBasicStats() {
@@ -109,6 +338,7 @@ public class Statystyki extends AppCompatActivity {
             }
         }).start();
     }
+
     private void setupCurrencyConverter() {
         Log.d(TAG, "Odpalanie metody setupCurrencyConverter...");
 
